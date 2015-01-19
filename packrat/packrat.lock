@@ -142,6 +142,12 @@ Source: CRAN
 Version: 0.6.4
 Hash: e4bf0e79b15a352510aff0de905d31e2
 
+Package: doParallel
+Source: CRAN
+Version: 1.0.8
+Hash: c5ffe9ac9595f653295484f4d2a5c25d
+Requires: foreach, iterators
+
 Package: e1071
 Source: CRAN
 Version: 1.6-4
