@@ -1,0 +1,16 @@
+FSelector-package       Package for selecting attributes
+as.simple.formula       Converting to formulas
+backward.search         Greedy search
+best.first.search       Best-first search
+cfs                     CFS filter
+chi.squared             Chi-squared filter
+consistency             Consistency-based filter
+cutoff.k                Cutoffs
+exhaustive.search       Exhaustive search
+hill.climbing.search    Hill climbing search
+information.gain        Entropy-based filters
+linear.correlation      Correlation filter
+oneR                    OneR algorithm
+random.forest.importance
+                        RandomForest filter
+relief                  RReliefF filter

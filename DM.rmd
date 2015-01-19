@@ -1,0 +1,442 @@
+---
+title: "Forest Fires in Portugal"
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 2
+author: João Teixeira - up200705307, Nuno Peixoto - up200804621
+bibliography: example.bib
+---
+
+```{r imports, echo=FALSE, results='hide', comment=FALSE, message=FALSE}
+source('Functions.R')
+```
+
+```{r import_train, echo=FALSE, results='hide'}
+train_data <- read.csv("data/train.csv", head=T,  na.strings=c("?"))
+```
+
+\pagebreak
+
+#Introdution
+The data set of the fires in the Portugal forests allow monitoring and forecasting the fire outbreaks taking into account a number of variables that may influence the amount of burned area. [@Torgo:2010]
+
+In 2003, Portugal faced the worst forest fire season ever, during which the burned area greatly exceeded the average for the last few decades. The year 2003 was marked by the loss of 8.6% (423,949 hectares) of the total area of Portuguese forests, representing a value four times the annual average of the 90's.
+
+The catastrophic forest fires involving human and infrastructures loses are becoming increasingly common in different parts of the world, particularly in bioclimatic regions of the Mediterranean due to dry and hot seasons. Besides leaving a long trail of burnt areas, the catastrophic fires have caused a significant number of human victims.
+
+Each data set entry contains a set of specifications (variables) into an forest area, such as elevation, slope, the percentage area of each existing type, density and **the total burnt area**.
+
+The purpose of this work consists int the data analysis and exploration of predictive models in order to predict the burned forest area and thereby create prevention actions to fighting forest fires.
+
+
+#Exploratory analysis of the data
+## Global Summary
+
+The train dataframe has the following main attributes:
+
+* Number of Columns: `r ncol(train_data)`.
+* Number of Rows: `r nrow(train_data)`.
+* Number of Data: `r ncol(train_data)*nrow(train_data)`.
+* Target Value: 1 (TotalBurntArea) - The variable is a numeric value so the predict model will be regression.
+* Number of Unknown Values: `r sum(apply(train_data, 1, function(x){any(is.na(x))}))`.
+
+The data are organized into four categories that affect somehow the area of burned forest:
+
+**Climate Variables** - The climatic conditions may affect fuel accumulation and moisture having an effect on the probability of a fire to occur;
+
+**Landscape Variables** - The landscape features of the Earth’s surface has been extensively associated with fire occurrence;
+
+**Socio-economic Variables** - Human factors have been used in predictive modeling of historical fire patterns;
+
+**Topographic Variables** - The topographic features and compositions may influence the fire ignitions and the accessibility limitations to reach the fire occurrences;
+
+## Main Variables Summary
+In order to know and summary only the variables that have more impact in the target value we can calculate the gain ratio between each variable with the TotalBurntArea.
+
+In the following table we have the **TOP5** main variables: 
+
+```{r gain_ratio, echo=FALSE}
+a <- gain.ratio(formula =  TotalBurntArea ~ ., train_data)
+a$attribute <- rownames(a)
+a <- head(a[order(a$attr_importance, decreasing =T ),],5)
+rownames(a) <- 1:nrow(a)
+pander(a, style = "grid", caption="Variables and the importance for the targe value.")
+```
+
+There's a short description of the main variables: 
+
+ - **ELEV_MAX** - Maximum altitude;
+ 
+ - **bio1** - Annual Mean Temperature;
+ 
+ - **ELEV_MEAN** - Mean altitude;
+ 
+ - **bio7** - Temperature Annual Range (between max temperature of warmest month and min of coldest month); 
+ 
+ - **DensPop01** - Population density in 2001;
+
+###**1. Summary**
+
+The summarization of the data allows to get an overview of the fundamental properties of the data submitted for analysis, with the aim to describe the properties of the data between the observations measures.
+
+With *summary* command is possible to view the following statistics: 
+
+```{r top5_vars, echo=FALSE, comment=NA}
+att <- a$attribute
+pander(summary(train_data[att]), style="grid", caption="Summarization of top5 variables", split.table = Inf)
+```
+
+```{r call_functions, echo=FALSE, results='hide'}
+nouts <- out_tax(train_data,att)
+stand_dev <- stand_dev(train_data,att)
+```
+
+###**2. Number of Outliers**
+
+An outlier is an observation that is outside the overall pattern of a distribution. Usually, the presence of an outlier indicates some sort of problem.
+
+It is importante check the number and the rate of existing outliers for the most importante variables of the data that may influence in the predictive models.
+
+* ELEV_MAX: `r nouts[1]`
+
+* Bio1: `r nouts[2]`
+
+* ELEV_MEAN: `r nouts[3]`
+
+* Bio7: `r nouts[4]`
+
+* DensPop01: `r nouts[5]`
+
+It can be concluded that the main variables (except **DensPop01**) have a low outlier rate which does not significantly affect the forecast values.
+
+With the variable DensPop01 it may have to do some sort of analysis or pre-processing once has a higher value of outliers.
+
+
+###**3. Distribution of the values**
+The most common graphical tool to assess the normality of the data is a Quantile-Quantile (Q-Q) plot. 
+
+In a Q-Q plot quantile the values of a theoretical distribution are plotted against quantile values of the observed sample distribution. Normaly the normal distribution is used to make a judgment if the 2 quantiles are in the same distibution[@Razali2011].
+
+In the following plots we analyse the variables with the e qqplot to check if the values follow the normal distribution. 
+
+
+```{r distribution, echo=FALSE, message=FALSE, warning=FALSE, dpi=100}
+attach(mtcars)
+par(mfrow=c(1,2))
+qqPlot(train_data$ELEV_MAX, main="Distribution of ELEV_MAX", ylab="ELEV_MAX", xlab="quantiles")
+qqPlot(train_data$bio1, main="Distribution of bio1", ylab="bio1", , xlab="quantiles")
+attach(mtcars)
+par(mfrow=c(1,2))
+qqPlot(train_data$ELEV_MEAN, main="Distribution of ELEV_MEAN", ylab="ELEV_MEAN", xlab="quantiles")
+qqPlot(train_data$bio7, main="Distribution of bio7", ylab="bio7", xlab="quantiles")
+qqPlot(train_data$DensPop01, main="Distribution of DensPop01", ylab="DensPop1", xlab="quantiles")
+```
+
+We can see that most of the variables follow in most of the values of a normal distribution. However, and due to the high presence of outlier the **DensPop01** those not follow this distribution.
+
+
+###**4. Standard Deviation**
+
+The Standard Deviation is a measure of how spread out numbers are. If the standand deviation is low than the observation values are close to the median, otherwise the data are spread out across a wide range of values.
+
+* ELEV_MAX: `r stand_dev[1]`
+
+* Bio1: `r stand_dev[2]`
+
+* ELEV_MEAN: `r stand_dev[3]`
+
+* Bio7: `r stand_dev[4]`
+
+* DensPop01: `r stand_dev[5]`
+
+In 3 of 5 cases show previously showed the standard deviation is to higher. This values (ELEV_MAX, ELEV_MEAN and DensPop01) must influence the results of the target variable. 
+
+
+## Target Variable Summary
+In this chapter we will make an exploratory analisys of the target variable, **TotalBurntArea**.
+
+###**1. Summary**
+
+```{r tv_sum, echo=FALSE, comment=NA}
+tmp <-summary(train_data["TotalBurntArea"])
+prc <- summaryToDataFrame(tmp)
+pander(prc, style="grid", caption="Summarization of target variable")
+```
+
+###**2. Histogram**
+
+```{r tv_hist2, echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(train_data,aes(x=TotalBurntArea)) + geom_histogram(binwidth=1000, aes(y=..density..)) +
+geom_density(color="red") + geom_rug() + ggtitle("The Histogram of TotalBurntArea")
+```
+
+Through the histogram above we can see that there is a large concentration of values below 20,000 square meters burned.
+
+###**3. Outliers**
+```{r tv_out, echo=FALSE}
+outs <- out_tax(train_data,c("TotalBurntArea"))
+```
+
+* TotalBurntArea: `r outs[1]`
+
+We can see that more than 10% of the total burnt area values are considered outliers.
+
+On the one hand despite containing a large number it means that the overall burned area values are low.
+
+On the other hand some outlier values are pretty high which means that there are situations where the area of burned forest is very high.
+
+```{r tv_box, echo=FALSE}
+boxplot(train_data$TotalBurntArea, ylab = "Burnt Area (ha)", main="Burnt Area Boxplot")
+```
+
+###**4. Total Area vs. Total Burnt Area**
+
+Compare the total burnt area for each of the locations of the data set with the total area may be able to draw some conclusions.
+
+```{r ta_vs_tba, echo=FALSE}
+ggplot(train_data, aes(x=TA, y=TotalBurntArea)) + geom_point() + ggtitle("Total Area/Total Burnt Area") + ylab("Total Burnt Area (ha)") + xlab("Total Area (ha)") + geom_abline(colour = "red")
+```
+
+We checked out from the graph that there are some cases (`r round(nrow(new_train_data[new_train_data$TA<new_train_data$TotalBurntArea,c("TA","TotalBurntArea")])/nrow(new_train_data)*100,2)` %) where the burnt area is greater than the total area. This means that in these cases the land area was completely burned repeatedly over time.
+
+```{r times_burnt, echo=FALSE}
+tmp<-new_train_data[new_train_data$TA<new_train_data$TotalBurntArea,c("TA","TotalBurntArea")]
+ggplot(tmp, aes(factor(round(tmp$TotalBurntArea/tmp$TA)))) + geom_bar() + xlab("Times Burnt") + ggtitle("Times Total Area Burnt")
+```
+
+By the graphic the majority of areas analyzed burns between 1-3 times its total area. However, there are regions where their area has been completely decimated by fire repeatedly over time which allows us to conclude that these regions are more conducive to fires.
+
+```{r times_burnt2, echo=FALSE, results='hide'}
+a <- gain.ratio(formula =  TotalBurntArea ~ ., train_data)
+a$attribute <- rownames(a)
+a <- head(a[order(a$attr_importance, decreasing =T ),],5)
+top_names <- rownames(a)
+most_burnt <- new_train_data[round(tmp$TotalBurntArea/tmp$TA)>9, top_names]
+pander(most_burnt, style="grid", caption="Sample of data with most burnt areas")
+```
+
+\pagebreak
+
+
+#Data Pre-Processing
+
+##Remove None importance Variables
+
+In order to reduce the size of data to analyze/evaluate, we can determine as was done in chapter 2.2, the importance of each variable in the training data in the target variable.
+
+In the following table we have the variables with no relevance to the calculation of the target variable:
+
+```{r non_importance_vars, echo=FALSE}
+nanration <- gain.ratio(formula =  TotalBurntArea ~ ., train_data)
+nanration$attribute <- rownames(nanration)
+nanration <- nanration[order(nanration$attr_importance, decreasing =T ),]
+nanration <- nanration[is.nan(nanration$attr_importance),]
+rownames(nanration) <- 1:nrow(nanration)
+pander(nanration, style = "grid", caption="Variables with no importance")
+```
+
+This way we will remove these `r nrow (nanration)` variables that will help to improve the processing efficiency in building models since we eliminate `r nrow (nanration)` columns of `r nrow (train_data)` entries.
+
+```{r remove_ration, echo=FALSE, results='hide'}
+data <- ncol(train_data)*nrow(train_data)
+rmdata <- nrow(train_data)*(ncol(train_data)-nrow(nanration))
+perc <- round(((data-rmdata)/(data))*100,2)
+```
+
+With this pre-processing that does not prejudice the information analysis could be reduced `r perc`% of the total data.
+
+```{r trim_data, echo=FALSE}
+att_names <- nanration$attribute
+new_train_data <- train_data[,!(names(train_data) %in% att_names)]
+```
+
+From now on we will no longer use the *train_data* provided. We will use the same data frame but without the data previously removed.
+
+
+##Normalizing Value
+Data normalization is one of the pre-processing techniques that we will use for the analisys of the data.
+
+This technique allows the values and variables of the dataframe are all on the same scale (typically with mean 0 and standard deviation 1).
+
+This way, the prediction of some regression models can be more efficient since the range of values can influence the performance of the data is provided.
+
+Not all models that we will present ahead perform this procedure internally, so we will normalize the training dataframe.
+
+```{r normalize}
+norm.new_train_data <- scale(new_train_data[,])
+colnames(norm.new_train_data) <- colnames(new_train_data)
+norm.new_train_data <- data.frame(norm.new_train_data)
+```
+
+Comparing the values before and after the normalized data we can see that before the pre-processing the scale of values was very dispersed (e.g. comparing a 88 with a 706), while after normalization the values are in a much more "harmonic" scale.
+
+```{r view_norm_data}
+head(new_train_data[,c(1:6)], 3)
+head(norm.new_train_data[,c(1:6)], 3)
+```
+
+\pagebreak
+
+#Predictive Models
+
+In this chapter we will look several forecasting models in order to figure out which the best regression model that can predict the target variable of the test data set with less error.
+
+The metric evaluation to be considered for these forecasts is the **MAE** - Mean Absolute Error.
+
+The Mean Absolute Error (MAE) measures the average absolute deviation between the predictions and the true values. The MAE is measured in the same unit as the original variable scale. That means if the values are scaled the mae is also scaled.
+
+For evaluate the modles we will use the **performanceEstimation** package that provides a set of functions and arguments that allow us to change the values of parameters in order to check the best fit for an specific model.
+
+
+##Multiple Linear Regression
+###Description
+Multiple linear regression attempts to model the relationship between two or more explanatory variables and a response variable by fitting a linear equation to observed data. Every value of the independent variable x is associated with a value of the dependent variable y.
+
+###Evaluation
+```{r mlr, echo=FALSE, warning=FALSE, comment=FALSE, comment=FALSE, message=FALSE, results='hide'}
+lm <- performanceEstimation(
+  PredTask(TotalBurntArea ~ ., train_data),
+  workflowVariants("standardWF",
+                   learner="lm", pre="centralImp",post="onlyPos"),
+  EstimationTask(metrics="mae",method=CV(nReps=2,nFolds=5)))
+mae <- topPerformers(lm)$train_data.TotalBurntArea[2]$Estimate
+```
+
+**MAE**: `r mae`.
+
+##Regression Trees
+###Description
+Tree-based models are models that provide as result a model based on logical tests on the input variables.
+
+This partitioning is defined based on carefully chosen logical tests on these variables. Within each partition all cases are assigned the same prediction (either a class label or a numeric value).
+
+Here is the tree regression generated for this case study:
+
+```{r rt, echo=FALSE, warning=FALSE, comment=FALSE, comment=FALSE, message=FALSE, results='hide'}
+ar <- rpart(TotalBurntArea ~ .,new_train_data)
+prp(ar)
+```
+
+
+###Evaluation
+```{r rt2, echo=FALSE, warning=FALSE, comment=FALSE, comment=FALSE, message=FALSE, results='hide'}
+rt <- performanceEstimation(
+  PredTask(TotalBurntArea ~ ., new_train_data),
+  workflowVariants("standardWF",
+                   learner="rpartXse",
+                   learner.pars=list(se=c(1,2,3),
+                                     minsplit=c(1,15,20))),
+  EstimationTask(metrics="mae",method=CV(nReps=3,nFolds=5)))
+mae <- topPerformers(rt)$new_train_data.TotalBurntArea[2]$Estimate
+prc <- getWF(rt)
+```
+
+
+`r pander(prc, style="grid", caption="Regression Tree Parameters")`
+
+**MAE**: `r mae`.
+
+
+##k-Nearest Neighbors(KNNs)
+###Description
+The purpose of the k Nearest Neighbours (kNN) algorithm is to use a data set where the
+data points are separated into several separate classes to predict the classification or regression of a new sample point. This sort of situation is best motivated through examples.
+
+###Evaluation
+
+We made several tests to the KNN model, changing the value of the number of the neighbours considered (*k* parameter). We tested with variations from 5 to 50 neighbors and obtained the following result:
+  
+```{r knn, echo=FALSE, warning=FALSE, comment=FALSE, comment=FALSE, message=FALSE, results='hide'}
+p<-seq(0,50,5)
+knn <- performanceEstimation(
+  PredTask(TotalBurntArea ~ ., new_train_data),
+  c(workflowVariants(learner="train.kknn",
+                     learner.pars=list(scale=T,
+                                       k=c(5,7,9, 11, 13),
+                                       distance=c(1,2,3),
+                                       kernel=c("epanechnikov", "triangular")))),
+  EstimationTask(metrics="mae",method=CV(nReps=3,nFolds=5)))
+mae <- topPerformers(knn)$new_train_data.TotalBurntArea[2]$Estimate
+prc <- getWF(knn)
+plot(knn)
+```
+
+It is possible to verify that the result of estimation with the different values of parameter *k* is very similar.
+
+`r pander(prc, style="grid", caption="KKNN module Parameters")`
+
+The best MAE value obtained with this modules is: `r mae`.
+
+
+##Support Vector Machines(SVMs)
+###Description
+The main goal of SVMs model is mapping the original data into a new, high-dimensional space, where it is possible to apply linear models to obtain a separating hyper plane. The mapping of the original data into this new space is carried out with the help of kernel functions. [@Torgo:2010]
+
+###Evaluation
+For the study of svm models and its performance we had into account two main parameters:
+  
+- cost: Cost of constraints violation (1 and 10);
+- gamma: Parameter needed for kernels (1, 0.1 and 0.01);
+
+```{r svm, echo=FALSE, warning=FALSE, comment=FALSE, comment=FALSE, message=FALSE, results='hide', dpi=100}
+svm <- performanceEstimation(
+  PredTask(TotalBurntArea ~ ., new_train_data),
+  c(workflowVariants(learner="svm",
+                     learner.pars=list(cost=c(1,10),
+                                       gamma=c(0.1,0.01,1)))),
+  EstimationTask(metrics="mae",method=CV(nReps=3,nFolds=5)))
+mae <- topPerformers(svm)$new_train_data.TotalBurntArea[2]$Estimate
+prc <- getWF(svm)
+plot(svm)
+```
+
+`r pander(prc, style="grid", caption="SMV module Parameters")`
+
+The best MAE value obtained with this modules is: `r mae`.
+
+It was made a different approach using SVMs package **ksvm** [@Karatzoglou:Smola:Hornik:Zeileis:2004:JSSOBK:v11i09] which allows us to take advantage of more parameters and a greater variety of kernels.
+
+```{r svm_2, echo=FALSE, warning=FALSE, comment=FALSE, comment=FALSE, message=FALSE, results='hide', dpi=100}
+svm2 <- performanceEstimation(
+  PredTask(TotalBurntArea ~ ., new_train_data),
+  c(workflowVariants(learner="ksvm",
+                     learner.pars=list(epsilon=c(0.01,10^-9),
+                                       C=c(1,2),
+                                       kernel=c("rbfdot","laplacedot","besseldot")))),
+  EstimationTask(metrics="mae",method=CV(nReps=3,nFolds=5)))
+mae <- topPerformers(svm2)$new_train_data.TotalBurntArea[2]$Estimate
+prc <- getWF(svm2)
+plot(svm2)
+```
+
+`r pander(prc, style="grid", caption="KSVM module Parameters")`
+
+The best MAE value obtained with this modules is: `r mae`.
+
+##Artificial neural networks(ANNs)
+###Description
+Artificial neural networks are models with a strong biological inspiration composed by a set of units
+(neurons) that are connected between them by associated weights.
+
+These basically consist of inputs which are multiplied by weights and then computed by a mathematical function which determines the activation of the neuron ANNs combine artificial neurons in order to process information[@rojas1996neural].
+
+###Evaluation
+
+##Assembles
+
+
+##Conclusions
+
+\pagebreak
+
+#Clustering
+In this chapter we will explore techniques of clustering.
+
+The goal of clustering techniques finding structure on what we have observed. Clustering is a division of data into groups of similar objects.
+
+Each group, called cluster, consists of objects that are similar between themselves and dissimilar to objects of other groups. Representing data by fewer clusters necessarily loses certain fine details but achieves simplification. Data modeling puts clustering in a historical perspective rooted in mathematics, statistics, and numerical analysis[@Berkhin02surveyof].
+
+\pagebreak
+
+#References

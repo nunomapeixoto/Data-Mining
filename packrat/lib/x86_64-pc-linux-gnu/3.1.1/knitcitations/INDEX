@@ -1,0 +1,11 @@
+bib_metadata            get the full metadata for a citation /
+                        bibliographic object
+bibliography            Generate the bibliography
+cite_options            Toggles for various citation options
+citep                   citep - inline parenthetical citation
+citet                   citet - inline parenthetical citation
+cleanbib                cleanbib
+greycite                greycite citation method
+read.bibtex             read.bibtex
+record_as_cited         record as cited
+write.bibtex            write a bibtex file
