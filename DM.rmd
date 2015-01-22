@@ -198,10 +198,10 @@ Compare the total burnt area for each of the locations of the data set with the 
 ggplot(train_data, aes(x=TA, y=TotalBurntArea)) + geom_point() + ggtitle("Total Area/Total Burnt Area") + ylab("Total Burnt Area (ha)") + xlab("Total Area (ha)") + geom_abline(colour = "red")
 ```
 
-We checked out from the graph that there are some cases (`r round(nrow(new_train_data[new_train_data$TA<new_train_data$TotalBurntArea,c("TA","TotalBurntArea")])/nrow(new_train_data)*100,2)` %) where the burnt area is greater than the total area. This means that in these cases the land area was completely burned repeatedly over time.
+We checked out from the graph that there are some cases (`r round(nrow(train_data[train_data$TA<train_data$TotalBurntArea,c("TA","TotalBurntArea")])/nrow(train_data)*100,2)` %) where the burnt area is greater than the total area. This means that in these cases the land area was completely burned repeatedly over time.
 
 ```{r times_burnt, echo=FALSE}
-tmp<-new_train_data[new_train_data$TA<new_train_data$TotalBurntArea,c("TA","TotalBurntArea")]
+tmp<-train_data[train_data$TA<train_data$TotalBurntArea,c("TA","TotalBurntArea")]
 ggplot(tmp, aes(factor(round(tmp$TotalBurntArea/tmp$TA)))) + geom_bar() + xlab("Times Burnt") + ggtitle("Times Total Area Burnt")
 ```
 
@@ -212,9 +212,12 @@ a <- gain.ratio(formula =  TotalBurntArea ~ ., train_data)
 a$attribute <- rownames(a)
 a <- head(a[order(a$attr_importance, decreasing =T ),],5)
 top_names <- rownames(a)
-most_burnt <- new_train_data[round(tmp$TotalBurntArea/tmp$TA)>9, top_names]
+most_burnt <- train_data[round(tmp$TotalBurntArea/tmp$TA)>9, top_names]
 pander(most_burnt, style="grid", caption="Sample of data with most burnt areas")
 ```
+
+##Conclusions
+
 
 \pagebreak
 
