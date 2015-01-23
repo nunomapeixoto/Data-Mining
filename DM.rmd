@@ -19,9 +19,9 @@ train_data <- read.csv("data/train.csv", head=T,  na.strings=c("?"))
 \pagebreak
 
 #Introdution
-The data set of the fires in the Portugal forests allow monitoring and forecasting the fire outbreaks taking into account a number of variables that may influence the amount of burned area. [@Torgo:2010]
+The data set of the fires in the Portugal forests allow monitoring and forecasting the fire outbreaks taking into account a number of variables that may influence the amount of burned area [@Torgo:2010]. 
 
-In 2003, Portugal faced the worst forest fire season ever, during which the burned area greatly exceeded the average for the last few decades. The year 2003 was marked by the loss of 8.6% (423,949 hectares) of the total area of Portuguese forests, representing a value four times the annual average of the 90's.
+In 2003, Portugal faced the worst forest fire season ever, during which the burned area greatly exceeded the average for the last few decades. The year 2003 was marked by the loss of 8.6% (423,949 hectares) of the total area of Portuguese forests, representing a value four times the annual average of the 90's [@burnt].
 
 The catastrophic forest fires involving human and infrastructures loses are becoming increasingly common in different parts of the world, particularly in bioclimatic regions of the Mediterranean due to dry and hot seasons. Besides leaving a long trail of burnt areas, the catastrophic fires have caused a significant number of human victims.
 
@@ -121,7 +121,7 @@ In a Q-Q plot quantile the values of a theoretical distribution are plotted agai
 In the following plots we analyse the variables with the e qqplot to check if the values follow the normal distribution. 
 
 
-```{r distribution, echo=FALSE, message=FALSE, warning=FALSE, dpi=100}
+```{r distribution, echo=FALSE, message=FALSE, warning=FALSE, dpi=100, comment=""}
 attach(mtcars)
 par(mfrow=c(1,2))
 qqPlot(train_data$ELEV_MAX, main="Distribution of ELEV_MAX", ylab="ELEV_MAX", xlab="quantiles")
@@ -285,7 +285,7 @@ head(norm.new_train_data[,c(1:6)], 3)
 
 In this chapter we will look several forecasting models in order to figure out which the best regression model that can predict the target variable of the test data set with less error.
 
-The metric evaluation to be considered for these forecasts is the **MAE** - Mean Absolute Error.
+The metric evaluation to be considered for these forecasts is the **MAE** - Mean Absolute Error. We use a cross validation method with 2 repetitions of 5 folds.
 
 The Mean Absolute Error (MAE) measures the average absolute deviation between the predictions and the true values. The MAE is measured in the same unit as the original variable scale. That means if the values are scaled the mae is also scaled.
 
@@ -297,6 +297,8 @@ For evaluate the modles we will use the **performanceEstimation** package that p
 Multiple linear regression attempts to model the relationship between two or more explanatory variables and a response variable by fitting a linear equation to observed data. Every value of the independent variable x is associated with a value of the dependent variable y.
 
 ###Evaluation
+For evaluate this method we use a central imputation for a initial pre-processing and only have in count the positive values generated with this module.  
+
 ```{r mlr, echo=FALSE, warning=FALSE, comment=FALSE, comment=FALSE, message=FALSE, results='hide'}
 lm <- performanceEstimation(
   PredTask(TotalBurntArea ~ ., train_data),
@@ -305,6 +307,8 @@ lm <- performanceEstimation(
   EstimationTask(metrics="mae",method=CV(nReps=2,nFolds=5)))
 mae <- topPerformers(lm)$train_data.TotalBurntArea[2]$Estimate
 ```
+
+We obtain the following error:
 
 **MAE**: `r mae`.
 
@@ -323,6 +327,16 @@ prp(ar)
 
 
 ###Evaluation
+For evaluate this method we use 2 diferent parameters, the **se** for the number of standard errors to use in the post-pruning and the **minsplit** to control the stopping criteria used to stop the initial tree growth.
+
+
+| Parameter       |    Values     |
+|-----------------|:-------------:|
+| **se**          |    1,2,3      |
+| **minsplit**    |    1,15,20    |
+    
+
+
 ```{r rt2, echo=FALSE, warning=FALSE, comment=FALSE, comment=FALSE, message=FALSE, results='hide'}
 rt <- performanceEstimation(
   PredTask(TotalBurntArea ~ ., new_train_data),
@@ -335,7 +349,7 @@ mae <- topPerformers(rt)$new_train_data.TotalBurntArea[2]$Estimate
 prc <- getWF(rt)
 ```
 
-
+With this module the error obtained was with the parameters:
 `r pander(prc, style="grid", caption="Regression Tree Parameters")`
 
 **MAE**: `r mae`.
@@ -348,10 +362,16 @@ data points are separated into several separate classes to predict the classific
 
 ###Evaluation
 
-We made several tests to the KNN model, changing the value of the number of the neighbours considered (*k* parameter). We tested with variations from 5 to 50 neighbors and obtained the following result:
+We made several tests to the KNN model, changing the value of the number of the neighbours considered (**k** parameter) the distance between neighbors (**distance** parameter) and the kernel to use (**kernel** parametes).
+
+| Parameter       |    Values                |
+|-----------------|:------------------------:|
+| **k**           |  5,7,9,11,13             |
+| **distance**    |    1,2,3                 |
+| **kernel**      | epanechnikov, triangular |
+
   
 ```{r knn, echo=FALSE, warning=FALSE, comment=FALSE, comment=FALSE, message=FALSE, results='hide'}
-p<-seq(0,50,5)
 knn <- performanceEstimation(
   PredTask(TotalBurntArea ~ ., new_train_data),
   c(workflowVariants(learner="train.kknn",
@@ -367,9 +387,11 @@ plot(knn)
 
 It is possible to verify that the result of estimation with the different values of parameter *k* is very similar.
 
+With this module the error obtained was with the parameters:
+
 `r pander(prc, style="grid", caption="KKNN module Parameters")`
 
-The best MAE value obtained with this modules is: `r mae`.
+**MAE**: `r mae`.
 
 
 ##Support Vector Machines(SVMs)
@@ -377,10 +399,15 @@ The best MAE value obtained with this modules is: `r mae`.
 The main goal of SVMs model is mapping the original data into a new, high-dimensional space, where it is possible to apply linear models to obtain a separating hyper plane. The mapping of the original data into this new space is carried out with the help of kernel functions. [@Torgo:2010]
 
 ###Evaluation
-For the study of svm models and its performance we had into account two main parameters:
-  
-- cost: Cost of constraints violation (1 and 10);
-- gamma: Parameter needed for kernels (1, 0.1 and 0.01);
+We made several tests to the SVM model, changing the value of cost of constraints violation (**cost** parameter) and the value needed for kernel's formula (**gamma**).
+
+
+| Parameter       |    Values                |
+|-----------------|:------------------------:|
+| **cost**        |  1,10                    |
+| **gamma**       |    0.1, 0.01, 1          |
+
+
 
 ```{r svm, echo=FALSE, warning=FALSE, comment=FALSE, comment=FALSE, message=FALSE, results='hide', dpi=100}
 svm <- performanceEstimation(
@@ -394,11 +421,21 @@ prc <- getWF(svm)
 plot(svm)
 ```
 
+The best MAE value obtained with this modules was obtained with the parameters:
 `r pander(prc, style="grid", caption="SMV module Parameters")`
 
-The best MAE value obtained with this modules is: `r mae`.
+**MAE**: `r mae`.
 
 It was made a different approach using SVMs package **ksvm** [@Karatzoglou:Smola:Hornik:Zeileis:2004:JSSOBK:v11i09] which allows us to take advantage of more parameters and a greater variety of kernels.
+
+
+| Parameter       |    Values                        |
+|-----------------|:--------------------------------:|
+| **epsilon**     |  0.01, 10^-9                     |
+| **C**           |    1, 2                          |
+| **kernel**      | rbfdot, laplacedot, besseldot    |
+
+
 
 ```{r svm_2, echo=FALSE, warning=FALSE, comment=FALSE, comment=FALSE, message=FALSE, results='hide', dpi=100}
 svm2 <- performanceEstimation(
@@ -413,9 +450,13 @@ prc <- getWF(svm2)
 plot(svm2)
 ```
 
+
+The best MAE value obtained with this modules was obtained with the parameters:
+
 `r pander(prc, style="grid", caption="KSVM module Parameters")`
 
-The best MAE value obtained with this modules is: `r mae`.
+**MAE**: `r mae`.
+
 
 ##Artificial neural networks(ANNs)
 ###Description
