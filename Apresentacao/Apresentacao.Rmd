@@ -1,0 +1,16 @@
+---
+title: "Forest Fires in Portugal"
+author: João Teixeira - up200705307, Nuno Peixoto - up200804621
+date: "25-01-2015"
+output:
+  beamer_presentation:
+    toc: true
+theme: Antibes
+---
+
+## Introduction
+
+* 
+*
+*
+

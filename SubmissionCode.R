@@ -257,14 +257,17 @@ topPerformers(res15)
 
 
 ####Submissão 16
+library(kernlab)
 res13 <- performanceEstimation(
-  PredTask(TotalBurntArea ~ ., new_train_data[,b]),
+  PredTask(TotalBurntArea ~ ., new_train_data),
   c(workflowVariants(learner="ksvm",
-                     learner.pars=list(epsilon=c( 10^-8, 10^-10),
-                                       C=c(1,2),
+                     learner.pars=list(epsilon=c(10^-7),
+                                       C=2,
                                        scaled=T,
-                                       kernel=c("rbfdot")))),
-  EstimationTask(metrics="mae",method=CV(nReps=6,nFolds=10)))
+                                       kernel="rbfdot",
+                                       prob.model=T,
+                                       tol=c(3*10^-8)))),
+  EstimationTask(metrics="mae",method=CV(nReps=3,nFolds=20)))
 topPerformers(res13)
 
 a <- gain.ratio(formula =  TotalBurntArea ~ ., new_train_data)
@@ -274,20 +277,11 @@ b <- a$attribute
 b<-append(b,"TotalBurntArea")
 
 set.seed(1234)
-s13 <- ksvm(TotalBurntArea ~ .,new_train_data[,b], C=2, epsilon=10^-10, kernel = "rbfdot", scaled=T, cross=10)
+s13 <- ksvm(TotalBurntArea ~ .,new_train_data, C=2, epsilon=10^-7, kernel = "rbfdot", scaled=T, cross=20, tol=3*10^-8, prob.model=T)
 ps13 <- predict(s13,new_test_data)
 ps13[ps13<0] <- 0
 res13 <- data.frame(ps13)
 write.csv(res13, file="Submissões/sub22.csv")
 
 
-####Submissão 17
-library(gbm)
-res15 <- performanceEstimation(
-  PredTask(TotalBurntArea ~ ., data=new_train_data),
-  c(workflowVariants(learner="gbm.train",
-                     learner.pars=list(n.trees = 100))),
-  EstimationTask(metrics="mae",method=CV(nReps=3,nFolds=5)))
-
-topPerformers(res15)
 
