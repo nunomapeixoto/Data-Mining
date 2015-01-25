@@ -226,11 +226,68 @@ write.csv(res13, file="Submissões/sub21.csv")
 
 
 
+####Submissão 14
 
-
-
+library(caret)
 res14 <- performanceEstimation(
   PredTask(TotalBurntArea ~ ., new_train_data),
+  c(workflowVariants(learner="nnet",
+                     learner.pars=list(size=c(2,4,6),
+                                       maxit=c(200,300),
+                                       decay=c(0.1, 0.4),
+                                       scale=T,
+                                       trace = F, 
+                                       linout = 1))),
+  EstimationTask(metrics="mae",method=CV(nReps=3,nFolds=5)))
+
+topPerformers(res14)
+
+
+####Submissão 15
+res15 <- performanceEstimation(
+  PredTask(TotalBurntArea ~ ., new_train_data),
+  c(workflowVariants(learner="randomForest",
+                     learner.pars=list(ntree=c(250,500,1000),
+                                       nodesize=c(5,10),
+                                       corr.bias=c(F,T),
+                                       mtry=c(3,6,9)))),
+  EstimationTask(metrics="mae",method=CV(nReps=3,nFolds=5)))
+
+topPerformers(res15)
+
+
+####Submissão 16
+res13 <- performanceEstimation(
+  PredTask(TotalBurntArea ~ ., new_train_data[,b]),
   c(workflowVariants(learner="ksvm",
-                     learner.pars=list(nbagg=c(10,20)))),
-  EstimationTask(metrics="mae",method=CV(nReps=3,nFolds=10)))
+                     learner.pars=list(epsilon=c( 10^-8, 10^-10),
+                                       C=c(1,2),
+                                       scaled=T,
+                                       kernel=c("rbfdot")))),
+  EstimationTask(metrics="mae",method=CV(nReps=6,nFolds=10)))
+topPerformers(res13)
+
+a <- gain.ratio(formula =  TotalBurntArea ~ ., new_train_data)
+a$attribute <- rownames(a)
+a <- head(a[order(a$attr_importance, decreasing =T ),],70)
+b <- a$attribute
+b<-append(b,"TotalBurntArea")
+
+set.seed(1234)
+s13 <- ksvm(TotalBurntArea ~ .,new_train_data[,b], C=2, epsilon=10^-10, kernel = "rbfdot", scaled=T, cross=10)
+ps13 <- predict(s13,new_test_data)
+ps13[ps13<0] <- 0
+res13 <- data.frame(ps13)
+write.csv(res13, file="Submissões/sub22.csv")
+
+
+####Submissão 17
+library(gbm)
+res15 <- performanceEstimation(
+  PredTask(TotalBurntArea ~ ., data=new_train_data),
+  c(workflowVariants(learner="gbm.train",
+                     learner.pars=list(n.trees = 100))),
+  EstimationTask(metrics="mae",method=CV(nReps=3,nFolds=5)))
+
+topPerformers(res15)
+

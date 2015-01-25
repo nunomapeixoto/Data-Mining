@@ -17,6 +17,8 @@ library(cluster)
 library(ipred)
 library(kknn)
 library(packrat)
+library(randomForest)
+library(gbm)
 
 out_tax <- function(data, att){
   vector = c()
@@ -76,4 +78,20 @@ getWF <- function(model){
   
   m <- matrix(parameters, nrow=2,ncol=len_pars,byrow=TRUE)
   return(m)
+}
+
+param_lis <-function(list){
+  html_list <- ''
+  len <- length(list)
+  for(k in 1:len){
+    if(k %% 2 != 0){
+      if(k+1 == len){
+        html_list <- paste(html_list,list[k],":",list[k+1],sep="")
+      }
+      else{
+        html_list <- paste(html_list,list[k],":",list[k+1],", ",sep="")
+      }
+    }
+  }
+  return(html_list)
 }

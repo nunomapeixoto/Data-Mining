@@ -10,6 +10,7 @@ bibliography: example.bib
 
 ```{r imports, echo=FALSE, results='hide', comment=FALSE, message=FALSE}
 source('Functions.R')
+attach(mtcars)
 ```
 
 ```{r import_train, echo=FALSE, results='hide'}
@@ -121,12 +122,11 @@ In a Q-Q plot quantile the values of a theoretical distribution are plotted agai
 In the following plots we analyse the variables with the e qqplot to check if the values follow the normal distribution. 
 
 
-```{r distribution, echo=FALSE, message=FALSE, warning=FALSE, dpi=100, comment=""}
-attach(mtcars)
+```{r distribution, echo=FALSE, message=FALSE, warning=FALSE, dpi=100, comment="", prompt=FALSE, error=FALSE}
 par(mfrow=c(1,2))
 qqPlot(train_data$ELEV_MAX, main="Distribution of ELEV_MAX", ylab="ELEV_MAX", xlab="quantiles")
 qqPlot(train_data$bio1, main="Distribution of bio1", ylab="bio1", , xlab="quantiles")
-attach(mtcars)
+
 par(mfrow=c(1,2))
 qqPlot(train_data$ELEV_MEAN, main="Distribution of ELEV_MEAN", ylab="ELEV_MEAN", xlab="quantiles")
 qqPlot(train_data$bio7, main="Distribution of bio7", ylab="bio7", xlab="quantiles")
@@ -217,6 +217,15 @@ pander(most_burnt, style="grid", caption="Sample of data with most burnt areas")
 ```
 
 ##Conclusions
+From the exploratory analisys made to the data we can take several conclusions.
+
+* The fact that there are many variables for analysis can somehow undermine the process of data analysis. The analysis of only the variables with the greatest impact came speed up this process;
+
+* The number of outliers is significantly low;
+
+* Most of the analyzed variables follow, or is very close to the normal distribution;
+
+* Although in most presented cases the total burnt area is less than 20,000 square meters there's a significant number of places the that the fire consumed a considerable area of its total area or has been completely burned several times;
 
 
 \pagebreak
@@ -285,7 +294,7 @@ head(norm.new_train_data[,c(1:6)], 3)
 
 In this chapter we will look several forecasting models in order to figure out which the best regression model that can predict the target variable of the test data set with less error.
 
-The metric evaluation to be considered for these forecasts is the **MAE** - Mean Absolute Error. We use a cross validation method with 2 repetitions of 5 folds.
+The metric evaluation to be considered for these forecasts is the **MAE** - Mean Absolute Error. We use a cross validation method with 2 repetitions of 3 folds.
 
 The Mean Absolute Error (MAE) measures the average absolute deviation between the predictions and the true values. The MAE is measured in the same unit as the original variable scale. That means if the values are scaled the mae is also scaled.
 
@@ -301,16 +310,17 @@ For evaluate this method we use a central imputation for a initial pre-processin
 
 ```{r mlr, echo=FALSE, warning=FALSE, comment=FALSE, comment=FALSE, message=FALSE, results='hide'}
 lm <- performanceEstimation(
-  PredTask(TotalBurntArea ~ ., train_data),
+  PredTask(TotalBurntArea ~ ., new_train_data),
   workflowVariants("standardWF",
                    learner="lm", pre="centralImp",post="onlyPos"),
-  EstimationTask(metrics="mae",method=CV(nReps=2,nFolds=5)))
-mae <- topPerformers(lm)$train_data.TotalBurntArea[2]$Estimate
+  EstimationTask(metrics="mae",method=CV(nReps=1,nFolds=2)))
+lm_mae <- topPerformers(lm)$new_train_data.TotalBurntArea[2]$Estimate
 ```
 
 We obtain the following error:
 
-**MAE**: `r mae`.
+**MAE**: `r lm_mae`.
+
 
 ##Regression Trees
 ###Description
@@ -330,11 +340,13 @@ prp(ar)
 For evaluate this method we use 2 diferent parameters, the **se** for the number of standard errors to use in the post-pruning and the **minsplit** to control the stopping criteria used to stop the initial tree growth.
 
 
-| Parameter       |    Values     |
-|-----------------|:-------------:|
-| **se**          |    1,2,3      |
-| **minsplit**    |    1,15,20    |
-    
+
+| Parameter       |    Values                |
+|-----------------|--------------------------|
+| **se**          |  1,2,3                   |
+| **minsplit**    |   1,15,30                |
+
+
 
 
 ```{r rt2, echo=FALSE, warning=FALSE, comment=FALSE, comment=FALSE, message=FALSE, results='hide'}
@@ -344,15 +356,14 @@ rt <- performanceEstimation(
                    learner="rpartXse",
                    learner.pars=list(se=c(1,2,3),
                                      minsplit=c(1,15,20))),
-  EstimationTask(metrics="mae",method=CV(nReps=3,nFolds=5)))
-mae <- topPerformers(rt)$new_train_data.TotalBurntArea[2]$Estimate
+  EstimationTask(metrics="mae",method=CV(nReps=1,nFolds=2)))
+rt_mae <- topPerformers(rt)$new_train_data.TotalBurntArea[2]$Estimate
 prc <- getWF(rt)
+params_rt <- param_lis(prc)
 ```
 
-With this module the error obtained was with the parameters:
+With this module the error **`r rt_mae`** was obtained with the parameters:
 `r pander(prc, style="grid", caption="Regression Tree Parameters")`
-
-**MAE**: `r mae`.
 
 
 ##k-Nearest Neighbors(KNNs)
@@ -364,6 +375,7 @@ data points are separated into several separate classes to predict the classific
 
 We made several tests to the KNN model, changing the value of the number of the neighbours considered (**k** parameter) the distance between neighbors (**distance** parameter) and the kernel to use (**kernel** parametes).
 
+
 | Parameter       |    Values                |
 |-----------------|:------------------------:|
 | **k**           |  5,7,9,11,13             |
@@ -371,27 +383,28 @@ We made several tests to the KNN model, changing the value of the number of the 
 | **kernel**      | epanechnikov, triangular |
 
   
+  
+It is possible to verify that the result of estimation with the different values is very similar for the values of the diferent tested parameters.
+
 ```{r knn, echo=FALSE, warning=FALSE, comment=FALSE, comment=FALSE, message=FALSE, results='hide'}
 knn <- performanceEstimation(
   PredTask(TotalBurntArea ~ ., new_train_data),
   c(workflowVariants(learner="train.kknn",
                      learner.pars=list(scale=T,
-                                       k=c(5,7,9, 11, 13),
+                                       k=c(5,7,9,11,13),
                                        distance=c(1,2,3),
-                                       kernel=c("epanechnikov", "triangular")))),
-  EstimationTask(metrics="mae",method=CV(nReps=3,nFolds=5)))
-mae <- topPerformers(knn)$new_train_data.TotalBurntArea[2]$Estimate
+                                       kernel=c("epanechnikov","triangular")))),
+  EstimationTask(metrics="mae",method=CV(nReps=1,nFolds=2)))
+knn_mae <- topPerformers(knn)$new_train_data.TotalBurntArea[2]$Estimate
 prc <- getWF(knn)
-plot(knn)
+params_knn <- param_lis(prc)
+plot(knn, ylab="Model Variation", xlab="MAE Results")
 ```
 
-It is possible to verify that the result of estimation with the different values of parameter *k* is very similar.
 
-With this module the error obtained was with the parameters:
-
-`r pander(prc, style="grid", caption="KKNN module Parameters")`
-
-**MAE**: `r mae`.
+With this module the error **`r knn_mae`** was obtained with the parameters:
+  
+  `r pander(prc, style="grid", caption="Knn module Parameters")`
 
 
 ##Support Vector Machines(SVMs)
@@ -409,22 +422,23 @@ We made several tests to the SVM model, changing the value of cost of constraint
 
 
 
+
 ```{r svm, echo=FALSE, warning=FALSE, comment=FALSE, comment=FALSE, message=FALSE, results='hide', dpi=100}
 svm <- performanceEstimation(
   PredTask(TotalBurntArea ~ ., new_train_data),
   c(workflowVariants(learner="svm",
                      learner.pars=list(cost=c(1,10),
                                        gamma=c(0.1,0.01,1)))),
-  EstimationTask(metrics="mae",method=CV(nReps=3,nFolds=5)))
-mae <- topPerformers(svm)$new_train_data.TotalBurntArea[2]$Estimate
+  EstimationTask(metrics="mae",method=CV(nReps=1,nFolds=2)))
+svm_mae <- topPerformers(svm)$new_train_data.TotalBurntArea[2]$Estimate
 prc <- getWF(svm)
-plot(svm)
+params_svm <- param_lis(prc)
+plot(svm, ylab="Model Variation", xlab="MAE Results")
 ```
 
-The best MAE value obtained with this modules was obtained with the parameters:
-`r pander(prc, style="grid", caption="SMV module Parameters")`
+The MAE error **`r svm_mae`** was obtained with the parameters:
+`r pander(prc, style="grid", caption="SVM module Parameters")`
 
-**MAE**: `r mae`.
 
 It was made a different approach using SVMs package **ksvm** [@Karatzoglou:Smola:Hornik:Zeileis:2004:JSSOBK:v11i09] which allows us to take advantage of more parameters and a greater variety of kernels.
 
@@ -441,21 +455,20 @@ It was made a different approach using SVMs package **ksvm** [@Karatzoglou:Smola
 svm2 <- performanceEstimation(
   PredTask(TotalBurntArea ~ ., new_train_data),
   c(workflowVariants(learner="ksvm",
-                     learner.pars=list(epsilon=c(0.01,10^-9),
+                     learner.pars=list(epsilon=c(0.01, 10^-9),
                                        C=c(1,2),
-                                       kernel=c("rbfdot","laplacedot","besseldot")))),
-  EstimationTask(metrics="mae",method=CV(nReps=3,nFolds=5)))
-mae <- topPerformers(svm2)$new_train_data.TotalBurntArea[2]$Estimate
+                                       kernel=c("rbfdot","laplacedot", "besseldot")))),
+EstimationTask(metrics="mae",method=CV(nReps=1,nFolds=2)))
+svm2_mae <- topPerformers(svm2)$new_train_data.TotalBurntArea[2]$Estimate
 prc <- getWF(svm2)
-plot(svm2)
+params_svm2 <- param_lis(prc)
+plot(svm2, ylab="Model Variation", xlab="MAE Results")
 ```
 
 
-The best MAE value obtained with this modules was obtained with the parameters:
+With this module the error **`r svm2_mae`** was obtained with the parameters:
 
 `r pander(prc, style="grid", caption="KSVM module Parameters")`
-
-**MAE**: `r mae`.
 
 
 ##Artificial neural networks(ANNs)
@@ -466,21 +479,120 @@ Artificial neural networks are models with a strong biological inspiration compo
 These basically consist of inputs which are multiplied by weights and then computed by a mathematical function which determines the activation of the neuron ANNs combine artificial neurons in order to process information[@rojas1996neural].
 
 ###Evaluation
+To evaluate the performance of the Ann's we made several tests with diferent parameters. We varied the the number of the hidden layers (**size** parameter), the maximum number of iterations (**maxit** parameter) and the weight decay (**decay** parameter).
 
-##Assembles
+
+| Parameter       |    Values                        |
+|-----------------|:--------------------------------:|
+| **size**        |  2,4,6                           |
+| **maxit**       |    200,300                       |
+| **decay**       | 0.1, 0.4                         |
+
+
+
+```{r nnet, echo=FALSE, warning=FALSE, comment=FALSE, comment=FALSE, message=FALSE, results='hide', dpi=100}
+nnet <- performanceEstimation(
+  PredTask(TotalBurntArea ~ ., new_train_data),
+  c(workflowVariants(learner="nnet",
+                     learner.pars=list(size=c(2,4, 6),
+                                       maxit=c(200, 300),
+                                       decay=c(0.1,0.4),
+                                       scale=T,
+                                       trace = F, 
+                                       linout = 1))),
+  EstimationTask(metrics="mae",method=CV(nReps=1,nFolds=2)))
+nnet_mae <- topPerformers(nnet)$new_train_data.TotalBurntArea[2]$Estimate
+prc <- getWF(nnet)
+params_nnet <- param_lis(prc)
+plot(nnet, ylab="Model Variation", xlab="MAE Results")
+```
+
+With this module the error **`r nnet_mae`** was obtained with the parameters:
+
+`r pander(prc, style="grid", caption="Artificial Neural Networks module Parameters")`
+
+
+##Random Forest (Ensembles)
+###Description
+The random forest is a ensemble model The individual decision trees are generated using a random selection of attributes at each node to determine the split. More formally, each tree depends on the values of a random vector sampled independently and with the same distribution for all trees in the forest[@Han:2011:DMC:1972541].
+
+###Evaluation
+To evaluate this module we 4 diferent parameters, the **ntree** to define the umber of trees to grow,  the **nodesize** that sets the the minimum size of terminal node, the **corr.bias** to perform (or not) bias correction for regression and **mtry** who define the number of variables randomly sampled as candidates at each split.
+
+
+| Parameter       |    Values                        |
+|-----------------|:--------------------------------:|
+| **ntree**       |  250, 500, 1000                  |
+| **nodesize**    |    5, 10                         |
+| **corr.bias**   | T (True), F (False)              |  
+| **mtry**        | 3,6, 9                           |
+
+
+```{r rd, echo=FALSE, warning=FALSE, comment=FALSE, comment=FALSE, message=FALSE, results='hide', dpi=100}
+rd <- performanceEstimation(
+  PredTask(TotalBurntArea ~ ., new_train_data),
+  c(workflowVariants(learner="randomForest",
+                     learner.pars=list(ntree=c(250, 500, 1000),
+                                       nodesize=c(5,10),
+                                       corr.bias=c(T, F),
+                                       mtry=c(3,6,9)))),
+  EstimationTask(metrics="mae",method=CV(nReps=1,nFolds=2)))
+rd_mae <- topPerformers(nnet)$new_train_data.TotalBurntArea[2]$Estimate
+prc <- getWF(rd)
+params_rd <- param_lis(prc)
+plot(rd, ylab="Model Variation", xlab="MAE Results")
+```
+
+\pagebreak
+
+With this module the error **`r rd_mae`** was obtained with the parameters:
+
+`r pander(prc, style="grid", caption="Random Forest module Parameters")`
 
 
 ##Conclusions
 
-\pagebreak
+After evaluating different models with different parameters it is possible to make a comparison between the results obtained by different predictive models. The following table shows for each model/forecast algorithm tested the **MAE** taken and the associated parameters.
 
-#Clustering
-In this chapter we will explore techniques of clustering.
 
-The goal of clustering techniques finding structure on what we have observed. Clustering is a division of data into groups of similar objects.
+| **Model**                        | **MAE ERROR** | **Parameters**       |
+| -------------------------------- |:-------------:| ---------------------|
+| Multiple Linear Regression       | `r lm_mae`    |   Default Parameters |
+| Regression Trees                 | `r rt_mae`    |   `r params_rt`      |
+| k-Nearest Neighbors              | `r knn_mae`   |   `r params_knn`     |
+| SVM                              | `r svm_mae`   |   `r params_svm`     |
+| SVM (ksvm)                       | `r svm2_mae`  |   `r params_svm2`    |
+| ANN                              | `r nnet_mae`  |    `r params_nnet`   |
+| Random Forest                    | `r rd_mae`    |  `r params_rd`       |
 
-Each group, called cluster, consists of objects that are similar between themselves and dissimilar to objects of other groups. Representing data by fewer clusters necessarily loses certain fine details but achieves simplification. Data modeling puts clustering in a historical perspective rooted in mathematics, statistics, and numerical analysis[@Berkhin02surveyof].
+We can see throw the table that Suport Vector Machine model with ksvm package produces a better MAE value which allows us to ensure that this model is the best to predict the total burnt area for a given set data.
+
+In the plot we have the cross validation results for all the models that we have tested and the can conclude that the top3 model are the **knn**, **svm** and the **ksvm** being the ksvm the best.
+
+
+```{r total, echo=FALSE, warning=FALSE, comment=FALSE, comment=FALSE, message=FALSE, results='hide', dpi=100}
+total <- performanceEstimation(
+  PredTask(TotalBurntArea ~ ., new_train_data),
+  c(workflowVariants(learner="lm", pre="centralImp",post="onlyPos"),
+    workflowVariants(learner="rpartXse",
+                     learner.pars=list(se=1, minsplit=20)),
+    workflowVariants(learner="train.kknn",
+                     learner.pars=list(scale=T, k=13, distance=1, kernel="epanechnikov")),
+    workflowVariants(learner="svm",
+                     learner.pars=list(cost=1, gamma=0.01)),
+    workflowVariants(learner="ksvm",
+                     learner.pars=list(epsilon=10^-9, C=1, kernel="rbfdot")),
+    workflowVariants(learner="nnet",
+                     learner.pars=list(size=4, maxit=300, decay=0.4, scale=T, trace=F, linout=1)),
+    workflowVariants(learner="randomForest",
+                     learner.pars=list(ntree=250, nodesize=5, corr.bias=F, mtry=9))),
+  EstimationTask(metrics="mae",method=CV(nReps=1,nFolds=2)))
+
+plot(total, ylab="Model", xlab="MAE Results")
+```
+
 
 \pagebreak
 
 #References
+
