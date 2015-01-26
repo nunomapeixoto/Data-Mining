@@ -8,29 +8,6 @@ output:
 theme: Antibes
 ---
 
-# Introduction
-
-# Exploratory analysis of the data
-
-* Main Variables
-* Target Variable
-
-## Main Variables 
-
-In order to know and summary only the variables that have more impact in the target value we can calculate
-the gain ratio between each variable with the TotalBurntArea.
-
-## Target Variable
-
-# Data Pre-Processing
-
-* Remove None importance Variables 
-* Normalizing Value
-
-## Remove None importance Variables
-
-## Normalizing Value
-
 # Clustering
 
 The following clustering methods were used to try to find different groups of observations present in the data set:
@@ -56,6 +33,14 @@ Using a R script with the help of the silhouette function we could find the best
 |6        |0.2645142|9        |0.2750479|8        |0.08740959|8        |0.3868419|
 |7        |0.2329236|8        |0.2561567|10       |0.08135908|10       |0.3321750|
 |8        |0.2286001|10       |0.2560370|9        |0.07454503|9        |0.3175380|
+
+## Silhouette plot
+
+```{r, echo=FALSE}
+k2 = kmeans(new_train_data[,-73], centers=2, iter.max=300)
+s = silhouette(k2$cluster,dist(new_train_data[,-73]))
+plot(s)
+```
 
 # Predictive Models
 
@@ -89,7 +74,28 @@ model.
 | Random Forest                    |2393.626       | **ntree**:500, **nodesize**:5, **corr.bias**:FALSE, **mtry**:3                           |
 | Regression Trees                 |2802.628       |   **se**:1, **minsplit**:15                                                              |
 
+## Models Plot
 
+```{r total, echo=FALSE, warning=FALSE, comment=FALSE, comment=FALSE, message=FALSE, results='hide', dpi=100}
+total <- performanceEstimation(
+  PredTask(TotalBurntArea ~ ., new_train_data),
+  c(workflowVariants(learner="lm", pre="centralImp",post="onlyPos"),
+    workflowVariants(learner="rpartXse",
+                     learner.pars=list(se=1, minsplit=20)),
+    workflowVariants(learner="train.kknn",
+                     learner.pars=list(scale=T, k=13, distance=1, kernel="epanechnikov")),
+    workflowVariants(learner="svm",
+                     learner.pars=list(cost=1, gamma=0.01)),
+    workflowVariants(learner="ksvm",
+                     learner.pars=list(epsilon=10^-9, C=1, kernel="rbfdot")),
+    workflowVariants(learner="nnet",
+                     learner.pars=list(size=4, maxit=300, decay=0.4, scale=T, trace=F, linout=1)),
+    workflowVariants(learner="randomForest",
+                     learner.pars=list(ntree=250, nodesize=5, corr.bias=F, mtry=9))),
+  EstimationTask(metrics="mae",method=CV(nReps=1,nFolds=2)))
+
+plot(total, ylab="Model", xlab="MAE Results")
+```
 
 # Conclusion
 
