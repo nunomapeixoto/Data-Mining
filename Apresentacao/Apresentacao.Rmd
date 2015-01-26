@@ -8,9 +8,41 @@ output:
 theme: Antibes
 ---
 
-## Introduction
+# Introduction
 
-* 
-*
-*
+# Exploratory analysis of the data
+
+- Main Variables
+- Target Variable
+
+## Main Variables 
+
+In order to know and summary only the variables that have more impact in the target value we can calculate
+the gain ratio between each variable with the TotalBurntArea.
+
+## Target Variable
+
+# Data Pre-Processing
+
+- Remove None importance Variables 
+- Normalizing Value
+
+## Remove None importance Variables
+
+## Normalizing Value
+
+# Predictive Models
+
+In order to find the best regression model that can predict the target variable of the test data set with less error, we analysed the following forecasting models:
+
+- Multiple Linear Regression
+- Regression Trees
+- K-Nearest Neighbors (KNNs)
+- Support Vector Machines (SVMs)
+- Artificial Neural Networks (ANNs)
+- Random Forest (Ensembles)
+
+# Conclusion
+
+
 
