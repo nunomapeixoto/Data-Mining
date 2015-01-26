@@ -42,7 +42,7 @@ The following clustering methods were used to try to find different groups of ob
 
 ## Clustering results
 
-Using an r script with the help of the silhouette function we could find the best number of clusters for each used method 
+Using a R script with the help of the silhouette function we could find the best number of clusters for each used method 
 
 | CLARA   |         |PAM      |         |hclust   |          |kmeans   |         |
 |---------|---------|---------|---------|---------|----------|---------|---------|
@@ -79,15 +79,15 @@ model.
 
 ## Model performance
 
-| **Model**                        | **MAE ERROR** | **Parameters**       |
-| -------------------------------- |:-------------:| ---------------------|
-| SVM (ksvm)                       |  1732.284  |  **epsilon**:1e-09, **C**:1, **kernel**:rbfdot    |
-| SVM                              | 1762.223    |  **cost**:1, **gamma**:0.01     |
-| k-Nearest Neighbors              |  1916.375    |   **scale**:TRUE, **k**:11, **distance**:1, **kernel**:triangular    |
-| Multiple Linear Regression       | 2310.785    |   Default Parameters|
-| ANN                              | 2393.626  |   **size**:2, **maxit**:200, **decay**:0.1, **scale**:TRUE, **trace**:FALSE, **linout**:1   |
-| Random Forest                    | 2393.626   | **ntree**:500, **nodesize**:5, **corr.bias**:FALSE, **mtry**:3     |
-| Regression Trees                 |  2802.628    |   **se**:1, **minsplit**:15     |
+| **Model**                        | **MAE ERROR** | **Parameters**                                                                           |
+| -------------------------------- |:-------------:| -----------------------------------------------------------------------------------------|
+| SVM (ksvm)                       |1732.284       |  **epsilon**:1e-09, **C**:1, **kernel**:rbfdot                                           |
+| SVM                              |1762.223       |  **cost**:1, **gamma**:0.01                                                              |
+| k-Nearest Neighbors              |1916.375       |   **scale**:TRUE, **k**:11, **distance**:1, **kernel**:triangular                        |
+| Multiple Linear Regression       |2310.785       |   Default Parameters                                                                     |
+| ANN                              |2393.626       |   **size**:2, **maxit**:200, **decay**:0.1, **scale**:TRUE, **trace**:FALSE, **linout**:1|
+| Random Forest                    |2393.626       | **ntree**:500, **nodesize**:5, **corr.bias**:FALSE, **mtry**:3                           |
+| Regression Trees                 |2802.628       |   **se**:1, **minsplit**:15                                                              |
 
 
 
