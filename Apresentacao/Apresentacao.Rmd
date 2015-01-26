@@ -42,6 +42,29 @@ In order to find the best regression model that can predict the target variable 
 - Artificial Neural Networks (ANNs)
 - Random Forest (Ensembles)
 
+## Model comparison
+
+The metric evaluation to be considered for these forecasts is the MAE - Mean Absolute Error. We use a
+cross validation method with 2 repetitions of 3 folds.
+
+To evaluate the models we will use the performanceEstimation package that provides a set of functions
+and arguments that allow us to change the values of parameters in order to check the best fit for an specific
+model.
+
+## Model performance
+
+| **Model**                        | **MAE ERROR** | **Parameters**       |
+| -------------------------------- |:-------------:| ---------------------|
+| SVM (ksvm)                       |  1732.284  |  **epsilon**:1e-09, **C**:1, **kernel**:rbfdot    |
+| SVM                              | 1762.223    |  **cost**:1, **gamma**:0.01     |
+| k-Nearest Neighbors              |  1916.375    |   **scale**:TRUE, **k**:11, **distance**:1, **kernel**:triangular    |
+| Multiple Linear Regression       | 2310.785    |   Default Parameters|
+| ANN                              | 2393.626  |   **size**:2, **maxit**:200, **decay**:0.1, **scale**:TRUE, **trace**:FALSE, **linout**:1   |
+| Random Forest                    | 2393.626   | **ntree**:500, **nodesize**:5, **corr.bias**:FALSE, **mtry**:3     |
+| Regression Trees                 |  2802.628    |   **se**:1, **minsplit**:15     |
+
+
+
 # Conclusion
 
 
