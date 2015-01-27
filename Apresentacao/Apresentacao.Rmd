@@ -112,6 +112,23 @@ total <- performanceEstimation(
 plot(total, ylab="Model", xlab="MAE Results")
 ```
 
+## Analysing the best model
+
+* svm
+
+| Parameter       |    Values                | Best Result Value |
+|-----------------|:------------------------:|------------|
+| **cost**        |  1,10                    | 1          |
+| **gamma**       |    0.1, 0.01, 1          | 0.01       |
+
+* ksvm
+
+| Parameter       |    Values                        | Best Result Value |
+|-----------------|:--------------------------------:|------------|
+| **epsilon**     |  0.01, 10^-9                     | 10^-9      |
+| **C**           |    1, 2                          |1           |
+| **kernel**      | rbfdot, laplacedot, besseldot    |rbfdot      |
+
 # Conclusion
 
 **Best performance models**
