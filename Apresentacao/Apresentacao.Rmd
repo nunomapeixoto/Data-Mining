@@ -119,10 +119,10 @@ plot(total, ylab="Model", xlab="MAE Results")
 * **SVM** (ksvm)
     * MAE error: 1732.284
     
-  * **SVM**
+* **SVM**
     * MAE error: 1762.223
     
-  * **k-Nearest Neighbors**
+* **k-Nearest Neighbors**
     * MAE error: 1916.375
 
 
