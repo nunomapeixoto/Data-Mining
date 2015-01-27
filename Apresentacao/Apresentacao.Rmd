@@ -115,7 +115,8 @@ plot(total, ylab="Model", xlab="MAE Results")
 # Conclusion
 
 **Best performance models**
-  * **SVM** (ksvm)
+  
+* **SVM** (ksvm)
     * MAE error: 1732.284
     
   * **SVM**
